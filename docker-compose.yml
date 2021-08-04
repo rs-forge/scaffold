@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+    proxy:
+        image: proxy.dev
+        build: ./nginx
+        container_name: "proxy.dev"
+        ports:
+            - 80:80
+    db:
+        image: db.dev
+        build: 
+            context: ../store/mongo
+            dockerfile: Dockerfile
+            target: base
+        depends_on:
+            - proxy
+        container_name: "db.dev"
+        environment:
+            - MONGO_DATA_DIR=/data/db
+            - MONGO_LOG_DIR=/dev/null
+            - MONGO_INITDB_DATABASE=rs-forge
+            - MONGO_INITDB_ROOT_USERNAME=mongodb
+            - MONGO_INITDB_ROOT_PASSWORD=mongo
+        ports:
+            - 27017:27017
+        command: mongod
+    api:
+        image: api.dev
+        build: ../store/graphql
+        depends_on:
+            - proxy
+            - mongodb
+        container_name: "api.dev"
+        ports:
+            - 4000:4000     
+    portal:
+        image: portal.dev
+        build:
+            context: ../portal
+            target: serve
+        depends_on:
+            - proxy
+            - api
+        container_name: "portal.dev"
+        ports:
+            - 5000:5000
